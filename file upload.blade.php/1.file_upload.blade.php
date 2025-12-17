@@ -1,5 +1,115 @@
-    {{-- Display Page --}}
+php artisan storage:link
+ {{-- create page --}}
+<form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    <input type="text" name="title" placeholder="Title"><br><br>
+    <input type="file" name="image"><br><br>
+    <button type="submit">Save</button>
+</form>
 
+
+
+ {{-- store file --}}
+ public function store(Request $request)
+{
+    $request->validate([
+        'image' => 'required|image|mimes:jpg,png,jpeg|max:2048'
+    ]);
+
+    // store image in uploads folder
+    $imagePath = $request->file('image')->store('uploads', 'public');
+
+    Post::create([
+        'image' => $imagePath
+    ]);
+
+    return redirect()->route('posts.index')->with('success','Post created');
+}
+
+ {{-- display page --}}
+ <img src="{{ asset('storage/'.$post->image) }}" width="80">
+
+ {{-- Edit page --}}
+ <form action="{{ route('posts.update',$post->id) }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    @method('PUT')
+    <img src="{{ asset('storage/'.$post->image) }}" width="100"><br><br>
+    <input type="file" name="image"><br><br>
+
+    <button type="submit">Update</button>
+</form>
+
+
+ {{-- update --}}
+ public function update(Request $request, Post $post)
+{
+    $request->validate([
+        'title' => 'required',
+        'image' => 'image|mimes:jpg,png,jpeg|max:2048'
+    ]);
+
+    if ($request->hasFile('image')) {
+
+        // delete old image
+        if ($post->image && Storage::disk('public')->exists($post->image)) {
+            Storage::disk('public')->delete($post->image);
+        }
+
+        // store new image
+        $imagePath = $request->file('image')->store('uploads', 'public');
+    } else {
+        $imagePath = $post->image;
+    }
+
+    $post->update([
+        'title' => $request->title,
+        'image' => $imagePath
+    ]);
+
+    return redirect()->route('posts.index')->with('success','Post updated');
+}
+
+ {{-- delete --}}
+public function destroy(Post $post)
+{
+    if ($post->image && Storage::disk('public')->exists($post->image)) {
+        Storage::disk('public')->delete($post->image);
+    }
+
+    $post->delete();
+
+    return redirect()->route('posts.index')->with('success','Post deleted');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+ {{-- Display Page --}}
+
+
+     {{-- php artisan storage:link --}} vv important link run 
 public function index()
     {
         $posts = Post::all();
@@ -79,9 +189,6 @@ public function store(Request $request)
 <form action="{{ route('posts.update',$post->id) }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
-
-    <input type="text" name="title" value="{{ $post->title }}"><br><br>
-
     <img src="{{ asset('images/'.$post->image) }}" width="100"><br><br>
 
     <input type="file" name="image"><br><br>
